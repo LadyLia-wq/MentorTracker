@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mentor documentation tracker</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 40px 16px;
+    background: #F7FAF3;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #1F2A17;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  .title-card { display:inline-block; background:#e5f8ca; border-radius: 10px; padding: 10px 180px; margin: 0 0 16px; }
+  h1 { font-size: 20px; font-weight: 700; color: #27500A; margin: 0; }
+
+  .card { background:#ffffff; border: 1px solid #DCE7D0; border-radius: 16px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+
+  .tabs { display:flex; gap:6px; margin-bottom:14px; }
+  .tab-btn { border:1px solid #DCE7D0; background:#ffffff; color:#5B6B4E; font-size:13px; font-weight:600; padding:7px 14px; border-radius:999px; cursor:pointer; }
+  .tab-btn:hover { background:#F3F8EC; }
+  .tab-btn.active { background:#3B6D11; color:#ffffff; border-color:#3B6D11; }
+
+  .top-row { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; margin-bottom: 1.25rem; }
+
+  .period-control { display:flex; align-items:center; gap:2px; background:#F3F8EC; border-radius: 10px; padding:4px; }
+  .period-control .field { display:flex; align-items:center; gap:4px; padding:0 4px; }
+  .period-control label { font-size:11px; color:#7C9268; font-weight:600; }
+  .period-control input[type="number"] { width:44px; height:28px; border:none; background:transparent; text-align:center; font-size:13px; font-weight:600; color:#27500A; }
+  .period-control span.sep { color:#B7CBA3; font-size:13px; }
+
+  .metric { text-align:right; }
+  .metric .num { font-size:28px; font-weight:700; line-height:1; color:#27500A; }
+  .metric .label { font-size:12px; color:#7C9268; margin-top:4px; }
+
+  .progress-track { height:8px; background:#EEF4E6; border-radius:99px; margin-bottom:1.25rem; overflow:hidden; }
+  .progress-fill { height:100%; background:#3B6D11; border-radius:99px; transition: width .3s ease; }
+
+  .search-wrap { position:relative; margin-bottom:14px; }
+  .search-wrap span.icon { position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:14px; color:#9CB088; pointer-events:none; }
+  .search-wrap input { width:100%; padding-left:34px; height:38px; border-radius: 10px; border:1px solid #DCE7D0; background:#ffffff; color:#1F2A17; font-size:14px; }
+  .search-wrap input:focus { outline:none; border-color:#3B6D11; box-shadow:0 0 0 2px #E1EFD3; }
+
+  .list { display:flex; flex-direction:column; gap:6px; }
+  .row-block { border-radius:10px; overflow:hidden; }
+  .row { display:flex; align-items:center; gap:12px; padding:10px 12px; background:#F7FAF3; transition: background .15s ease; flex-wrap:wrap; }
+  .row.done { background:#ffffff; border:1px solid #DCE7D0; }
+
+  .avatar { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0; background:#EEF2E7; color:#6B7A5E; border:1px solid #DCE7D0; }
+  .row.done .avatar { background:#DCEFC4; color:#3B6D11; border-color:transparent; }
+  .row.multi .avatar { background:#3B6D11; color:#ffffff; border-color:transparent; }
+
+  .name { flex:1; font-size:14px; color:#1F2A17; min-width:100px; }
+  .row.done .name { color:#3B4A31; }
+
+  .day-tags { display:flex; gap:4px; flex-wrap:wrap; }
+  .day-tag { display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700; padding:3px 8px; border-radius:99px; background:#DCEFC4; color:#27500A; border:none; cursor:pointer; }
+  .day-tag:hover { background:#C7E5A5; }
+  .not-yet-badge { font-size:12px; font-weight:500; padding:3px 10px; border-radius:99px; background:#F0F3EA; color:#8B9A7A; border:1px solid #E4EBDA; }
+
+  .row-actions { display:flex; gap:6px; }
+  .actionbtn { height:30px; padding:0 12px; display:inline-flex; align-items:center; gap:5px; border-radius: 999px; border:1px solid #DCE7D0; background:#ffffff; cursor:pointer; transition: transform .1s ease, background .15s ease; font-size:12px; font-weight:600; color:#3B6D11; }
+  .actionbtn:hover { background:#F3F8EC; }
+  .actionbtn:active { transform: scale(0.96); }
+  .actionbtn.clear-btn { color:#A8574A; }
+  .actionbtn.clear-btn:hover { background:#FAEEEC; }
+  .actionbtn.muted { color:#7C9268; }
+
+  .day-picker { display:flex; gap:6px; padding:10px 12px; background:#F3F8EC; border:1px solid #DCE7D0; border-top:none; flex-wrap:wrap; }
+  .day-picker button { height:28px; padding:0 10px; border-radius:8px; border:1px solid #DCE7D0; background:#ffffff; font-size:12px; font-weight:600; color:#3B6D11; cursor:pointer; }
+  .day-picker button:hover { background:#DCEFC4; }
+  .day-picker button.picked { background:#3B6D11; color:#ffffff; border-color:#3B6D11; }
+  .day-picker .hint { font-size:11px; color:#7C9268; align-self:center; margin-right:4px; }
+
+  .footer-row { display:flex; justify-content:center; margin-top:1.25rem; }
+  .link-btn { font-size:12px; border:none; background:none; color:#3B6D11; font-weight:600; padding:6px 10px; cursor:pointer; }
+  .link-btn:hover { color:#27500A; text-decoration:underline; }
+
+  .storage-note { font-size:11px; color:#9CB088; text-align:center; margin-top:8px; }
+  .empty-note { font-size:13px; color:#9CB088; text-align:center; padding:24px 0; }
+
+  #setup textarea, #add-students-input { width:100%; font-size:13px; border-radius: 10px; padding:10px 12px; border:1px solid #DCE7D0; color:#1F2A17; font-family: inherit; }
+  .primary-btn { background:#3B6D11; color:#ffffff; border:none; border-radius:10px; padding:8px 16px; font-size:13px; font-weight:700; cursor:pointer; }
+  .primary-btn:hover { background:#27500A; }
+
+  .manage-row { display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:10px; background:#F7FAF3; margin-bottom:6px; }
+  .manage-row input[type="text"] { flex:1; border:1px solid transparent; background:transparent; font-size:14px; color:#1F2A17; padding:4px 6px; border-radius:6px; }
+  .manage-row input[type="text"]:focus { outline:none; border-color:#3B6D11; background:#ffffff; }
+  .manage-row .rename-btn { color:#3B6D11; }
+  .manage-row .remove-btn { color:#A8574A; }
+
+  .section-label { font-size:13px; font-weight:700; color:#27500A; margin: 18px 0 8px; }
+  .section-label:first-child { margin-top:0; }
+
+  .history-item { font-size:12px; color:#5B6B4E; margin-top:4px; }
+  .history-item b { color:#27500A; }
+
+  button { font-family: inherit; }
+  input { font-family: inherit; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="title-card"><h1>MENTOR DOCUMENTATION TRACKER</h1></div>
+
+  <div id="setup" class="card" style="display:none;">
+    <p style="font-size:14px; color:#5B6B4E; margin:0 0 10px;">Paste your student list, one name per line.</p>
+    <textarea id="roster-input" rows="10" placeholder="Jane Doe&#10;John Smith&#10;..."></textarea>
+    <div style="display:flex; gap:8px; margin-top:12px;">
+      <button class="primary-btn" id="save-roster">Save list</button>
+    </div>
+  </div>
+
+  <div id="main" style="display:none;">
+    <div class="tabs">
+      <button class="tab-btn" id="tab-manage">Manage students</button>
+      <button class="tab-btn" id="tab-tracker">Tracker</button>
+      <button class="tab-btn" id="tab-removed">Removed students</button>
+    </div>
+
+    <div id="tracker" class="card">
+      <div class="top-row">
+        <div class="period-control">
+          <div class="field">
+            <label for="block-num">Block</label>
+            <input type="number" id="block-num" min="1" max="12" />
+          </div>
+          <span class="sep">/</span>
+          <div class="field">
+            <label for="week-num">Week</label>
+            <input type="number" id="week-num" min="1" max="12" />
+          </div>
+        </div>
+        <div class="metric">
+          <div class="num" id="progress-num"></div>
+          <div class="label">documented this week</div>
+        </div>
+      </div>
+
+      <div class="progress-track"><div class="progress-fill" id="progress-bar" style="width:0%;"></div></div>
+
+      <div class="search-wrap">
+        <span class="icon">&#128269;</span>
+        <input type="text" id="search" placeholder="Search students" />
+      </div>
+
+      <div class="list" id="list"></div>
+      <div id="empty-note" class="empty-note" style="display:none;">No students match your search.</div>
+    </div>
+
+    <div id="manage" class="card" style="display:none;">
+      <div class="section-label">Current students</div>
+      <div id="manage-list"></div>
+
+      <div class="section-label">Add students</div>
+      <textarea id="add-students-input" rows="4" placeholder="Add new names, one per line&#10;e.g. Jane Doe"></textarea>
+      <div style="margin-top:10px;">
+        <button class="primary-btn" id="add-students-btn">Add to list</button>
+      </div>
+    </div>
+
+    <div id="removed" class="card" style="display:none;">
+      <div class="section-label">Removed students</div>
+      <div id="removed-list"></div>
+      <div id="removed-empty" class="empty-note" style="display:none;">No removed students. When you remove someone from the manage tab, they'll show up here along with their documentation history.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const dayOrder = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const jsDayToLabel = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const todayLabel = jsDayToLabel[new Date().getDay()];
+  const PERIOD_PREFIX = 'mentor-tracker-period-';
+
+  function initials(name){
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].slice(0,2).toUpperCase();
+    return (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
+  }
+
+  let roster = [];
+  let removedRoster = [];
+  let weekData = {};
+  let currentBlock = 1;
+  let currentWeek = 1;
+  let openPickerFor = null;
+  let activeTab = 'tracker';
+  let editingStudent = null;
+
+  function periodKey(){ return 'B' + currentBlock + '-W' + currentWeek; }
+
+  function load(){
+    try {
+      const r = localStorage.getItem('mentor-tracker-roster');
+      roster = r ? JSON.parse(r) : [];
+    } catch(e) { roster = []; }
+
+    try {
+      const rr = localStorage.getItem('mentor-tracker-removed');
+      removedRoster = rr ? JSON.parse(rr) : [];
+    } catch(e) { removedRoster = []; }
+
+    try {
+      const p = localStorage.getItem('mentor-tracker-current-period');
+      if (p) {
+        const parsed = JSON.parse(p);
+        currentBlock = parsed.block || 1;
+        currentWeek = parsed.week || 1;
+      }
+    } catch(e) {}
+
+    document.getElementById('block-num').value = currentBlock;
+    document.getElementById('week-num').value = currentWeek;
+    loadWeekData();
+    render();
+  }
+
+  function saveCurrentPeriod(){
+    localStorage.setItem('mentor-tracker-current-period', JSON.stringify({ block: currentBlock, week: currentWeek }));
+  }
+
+  function loadWeekData(){
+    try {
+      const w = localStorage.getItem(PERIOD_PREFIX + periodKey());
+      weekData = w ? JSON.parse(w) : {};
+    } catch(e) { weekData = {}; }
+  }
+
+  function saveRosterList(){
+    localStorage.setItem('mentor-tracker-roster', JSON.stringify(roster));
+  }
+
+  function saveRemovedList(){
+    localStorage.setItem('mentor-tracker-removed', JSON.stringify(removedRoster));
+  }
+
+  function saveRoster(list){
+    roster = list;
+    saveRosterList();
+    render();
+  }
+
+  function saveWeekData(){
+    localStorage.setItem(PERIOD_PREFIX + periodKey(), JSON.stringify(weekData));
+  }
+
+  function sortDays(days){
+    return days.slice().sort((a,b) => dayOrder.indexOf(a) - dayOrder.indexOf(b));
+  }
+
+  function logToday(name){
+    const existing = weekData[name];
+    if (!existing) {
+      weekData[name] = { days: [todayLabel] };
+    } else if (!existing.days.includes(todayLabel)) {
+      existing.days = sortDays(existing.days.concat([todayLabel]));
+    }
+    saveWeekData();
+    render();
+  }
+
+  function addDay(name, day){
+    const existing = weekData[name];
+    if (!existing) {
+      weekData[name] = { days: [day] };
+    } else if (!existing.days.includes(day)) {
+      existing.days = sortDays(existing.days.concat([day]));
+    }
+    openPickerFor = null;
+    saveWeekData();
+    render();
+  }
+
+  function removeDay(name, day){
+    const existing = weekData[name];
+    if (!existing) return;
+    existing.days = existing.days.filter(d => d !== day);
+    if (existing.days.length === 0) delete weekData[name];
+    saveWeekData();
+    render();
+  }
+
+  function clearStudent(name){
+    delete weekData[name];
+    openPickerFor = null;
+    saveWeekData();
+    render();
+  }
+
+  function togglePicker(name){
+    openPickerFor = (openPickerFor === name) ? null : name;
+    render();
+  }
+
+  // ---- roster management: remove / restore / rename ----
+
+  function removeStudent(name){
+    roster = roster.filter(n => n !== name);
+    if (!removedRoster.includes(name)) removedRoster.push(name);
+    saveRosterList();
+    saveRemovedList();
+    render();
+  }
+
+  function restoreStudent(name){
+    removedRoster = removedRoster.filter(n => n !== name);
+    if (!roster.includes(name)) roster.push(name);
+    saveRosterList();
+    saveRemovedList();
+    render();
+  }
+
+  function renameStudent(oldName, newName){
+    newName = newName.trim();
+    if (!newName || newName === oldName) return;
+    const idx = roster.indexOf(oldName);
+    if (idx === -1) return;
+    roster[idx] = newName;
+    saveRosterList();
+
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.indexOf(PERIOD_PREFIX) === 0) {
+        try {
+          const data = JSON.parse(localStorage.getItem(key));
+          if (data && Object.prototype.hasOwnProperty.call(data, oldName)) {
+            data[newName] = data[oldName];
+            delete data[oldName];
+            localStorage.setItem(key, JSON.stringify(data));
+            if (key === PERIOD_PREFIX + periodKey()) weekData = data;
+          }
+        } catch(e) {}
+      }
+    }
+    render();
+  }
+
+  function historyFor(name){
+    const results = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.indexOf(PERIOD_PREFIX) === 0) {
+        try {
+          const data = JSON.parse(localStorage.getItem(key));
+          if (data && data[name] && data[name].days && data[name].days.length) {
+            results.push({ period: key.slice(PERIOD_PREFIX.length), days: data[name].days });
+          }
+        } catch(e) {}
+      }
+    }
+    results.sort((a,b) => a.period.localeCompare(b.period));
+    return results;
+  }
+
+  // ---- tabs ----
+
+  function setTab(tab){
+    activeTab = tab;
+    document.getElementById('tracker').style.display = tab === 'tracker' ? 'block' : 'none';
+    document.getElementById('manage').style.display = tab === 'manage' ? 'block' : 'none';
+    document.getElementById('removed').style.display = tab === 'removed' ? 'block' : 'none';
+    document.getElementById('tab-tracker').classList.toggle('active', tab === 'tracker');
+    document.getElementById('tab-manage').classList.toggle('active', tab === 'manage');
+    document.getElementById('tab-removed').classList.toggle('active', tab === 'removed');
+    if (tab === 'manage') renderManage();
+    if (tab === 'removed') renderRemoved();
+  }
+
+  function renderManage(){
+  const wrap = document.getElementById('manage-list');
+  wrap.innerHTML = '';
+  if (!roster.length) {
+    wrap.innerHTML = '<div class="empty-note">No students yet.</div>';
+    return;
+  }
+  roster.slice().sort((a,b) => a.localeCompare(b)).forEach(name => {
+    const row = document.createElement('div');
+    row.className = 'manage-row';
+
+    if (editingStudent === name) {
+      // ---- edit mode: input box + Save button ----
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.value = name;
+
+      const saveBtn = document.createElement('button');
+      saveBtn.className = 'actionbtn rename-btn';
+      saveBtn.textContent = 'Save';
+      saveBtn.onclick = () => {
+        renameStudent(name, input.value);
+        editingStudent = null;
+        renderManage();
+      };
+
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'actionbtn remove-btn';
+      removeBtn.textContent = 'Remove';
+      removeBtn.onclick = () => removeStudent(name);
+
+      row.appendChild(input);
+      row.appendChild(saveBtn);
+      row.appendChild(removeBtn);
+    } else {
+      // ---- display mode: plain name + checkmark ----
+      const nameEl = document.createElement('div');
+      nameEl.className = 'name';
+      nameEl.textContent = name;
+      nameEl.style.cursor = 'pointer';
+      nameEl.onclick = () => {
+        editingStudent = name;
+        renderManage();
+      };
+
+      const checkIcon = document.createElement('span');
+      checkIcon.textContent = '\u2713';
+      checkIcon.style.color = '#3B6D11';
+      checkIcon.style.fontWeight = '700';
+      checkIcon.style.padding = '0 8px';
+
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'actionbtn remove-btn';
+      removeBtn.textContent = 'Remove';
+      removeBtn.onclick = () => removeStudent(name);
+
+      row.appendChild(nameEl);
+      row.appendChild(checkIcon);
+      row.appendChild(removeBtn);
+    }
+
+    wrap.appendChild(row);
+  });
+}
+
+  function renderRemoved(){
+    const wrap = document.getElementById('removed-list');
+    const emptyNote = document.getElementById('removed-empty');
+    wrap.innerHTML = '';
+    emptyNote.style.display = removedRoster.length ? 'none' : 'block';
+
+    removedRoster.slice().sort((a,b) => a.localeCompare(b)).forEach(name => {
+      const box = document.createElement('div');
+      box.className = 'manage-row';
+      box.style.flexDirection = 'column';
+      box.style.alignItems = 'stretch';
+
+      const topLine = document.createElement('div');
+      topLine.style.display = 'flex';
+      topLine.style.alignItems = 'center';
+      topLine.style.gap = '8px';
+
+      const nameEl = document.createElement('div');
+      nameEl.className = 'name';
+      nameEl.textContent = name;
+
+      const restoreBtn = document.createElement('button');
+      restoreBtn.className = 'actionbtn';
+      restoreBtn.textContent = 'Restore';
+      restoreBtn.onclick = () => restoreStudent(name);
+
+      topLine.appendChild(nameEl);
+      topLine.appendChild(restoreBtn);
+      box.appendChild(topLine);
+
+      const history = historyFor(name);
+      if (history.length) {
+        history.forEach(h => {
+          const line = document.createElement('div');
+          line.className = 'history-item';
+          line.innerHTML = '<b>' + h.period + ':</b> ' + h.days.join(', ');
+          box.appendChild(line);
+        });
+      } else {
+        const line = document.createElement('div');
+        line.className = 'history-item';
+        line.textContent = 'No documentation history recorded.';
+        box.appendChild(line);
+      }
+
+      wrap.appendChild(box);
+    });
+  }
+
+  // ---- tracker render ----
+
+  function render(){
+    const setup = document.getElementById('setup');
+    const main = document.getElementById('main');
+
+    if (!roster.length && !removedRoster.length) {
+      setup.style.display = 'block';
+      main.style.display = 'none';
+      return;
+    }
+    setup.style.display = 'none';
+    main.style.display = 'block';
+
+    const doneCount = Object.keys(weekData).filter(n => roster.includes(n)).length;
+    document.getElementById('progress-num').textContent = doneCount + ' / ' + roster.length;
+    document.getElementById('progress-bar').style.width = roster.length ? Math.round((doneCount/roster.length)*100) + '%' : '0%';
+
+    const query = (document.getElementById('search').value || '').toLowerCase();
+    const list = document.getElementById('list');
+    const emptyNote = document.getElementById('empty-note');
+    list.innerHTML = '';
+
+    const filtered = roster
+      .filter(name => name.toLowerCase().includes(query))
+      .sort((a,b) => {
+        const aDone = !!weekData[a], bDone = !!weekData[b];
+        if (aDone === bDone) return a.localeCompare(b);
+        return aDone ? 1 : -1;
+      });
+
+    emptyNote.style.display = filtered.length ? 'none' : 'block';
+
+    filtered.forEach(name => {
+        const entry = weekData[name];
+        const days = entry ? entry.days : [];
+
+        const rowBlock = document.createElement('div');
+        rowBlock.className = 'row-block';
+
+        const row = document.createElement('div');
+        row.className = 'row' + (days.length ? ' done' : '') + (days.length > 1 ? ' multi' : '');
+
+        const avatar = document.createElement('div');
+        avatar.className = 'avatar';
+        avatar.textContent = initials(name);
+
+        const nameEl = document.createElement('div');
+        nameEl.className = 'name';
+        nameEl.textContent = name;
+
+        const tagsWrap = document.createElement('div');
+        tagsWrap.className = 'day-tags';
+        if (days.length) {
+          days.forEach(day => {
+            const tag = document.createElement('button');
+            tag.className = 'day-tag';
+            tag.textContent = day + ' \u2715';
+            tag.title = 'Remove ' + day;
+            tag.onclick = () => removeDay(name, day);
+            tagsWrap.appendChild(tag);
+          });
+        } else {
+          const badge = document.createElement('span');
+          badge.className = 'not-yet-badge';
+          badge.textContent = 'Not yet';
+          tagsWrap.appendChild(badge);
+        }
+
+        const actions = document.createElement('div');
+        actions.className = 'row-actions';
+
+        const mainBtn = document.createElement('button');
+        mainBtn.className = 'actionbtn';
+        if (!days.length) {
+          mainBtn.textContent = '\u2713 Log';
+          mainBtn.title = 'Mark as documented today';
+          mainBtn.onclick = () => logToday(name);
+        } else {
+          mainBtn.textContent = '+ Update';
+          mainBtn.title = 'Add another day this was updated';
+          mainBtn.onclick = () => togglePicker(name);
+        }
+        actions.appendChild(mainBtn);
+
+        if (days.length) {
+          const clearBtn = document.createElement('button');
+          clearBtn.className = 'actionbtn clear-btn';
+          clearBtn.textContent = 'Clear';
+          clearBtn.title = 'Clear all days for ' + name;
+          clearBtn.onclick = () => clearStudent(name);
+          actions.appendChild(clearBtn);
+        }
+
+        row.appendChild(avatar);
+        row.appendChild(nameEl);
+        row.appendChild(tagsWrap);
+        row.appendChild(actions);
+        rowBlock.appendChild(row);
+
+        if (openPickerFor === name) {
+          const picker = document.createElement('div');
+          picker.className = 'day-picker';
+          const hint = document.createElement('span');
+          hint.className = 'hint';
+          hint.textContent = 'Which day?';
+          picker.appendChild(hint);
+          dayOrder.forEach(day => {
+            const dbtn = document.createElement('button');
+            dbtn.textContent = day;
+            if (days.includes(day)) dbtn.classList.add('picked');
+            dbtn.onclick = () => days.includes(day) ? removeDay(name, day) : addDay(name, day);
+            picker.appendChild(dbtn);
+          });
+          rowBlock.appendChild(picker);
+        }
+
+        list.appendChild(rowBlock);
+      });
+
+    if (activeTab === 'manage') renderManage();
+    if (activeTab === 'removed') renderRemoved();
+  }
+
+  document.getElementById('save-roster').onclick = () => {
+    const raw = document.getElementById('roster-input').value;
+    const names = raw.split('\n').map(s => s.trim()).filter(Boolean);
+    if (names.length) saveRoster(names);
+  };
+
+  document.getElementById('add-students-btn').onclick = () => {
+    const raw = document.getElementById('add-students-input').value;
+    const names = raw.split('\n').map(s => s.trim()).filter(Boolean);
+    names.forEach(n => { if (!roster.includes(n)) roster.push(n); });
+    saveRosterList();
+    document.getElementById('add-students-input').value = '';
+    render();
+    renderManage();
+  };
+
+  document.getElementById('tab-tracker').onclick = () => setTab('tracker');
+  document.getElementById('tab-manage').onclick = () => setTab('manage');
+  document.getElementById('tab-removed').onclick = () => setTab('removed');
+
+  document.getElementById('search').oninput = render;
+
+  document.getElementById('block-num').onchange = (e) => {
+    currentBlock = parseInt(e.target.value, 10) || currentBlock;
+    saveCurrentPeriod();
+    loadWeekData();
+    render();
+  };
+  document.getElementById('week-num').onchange = (e) => {
+    currentWeek = parseInt(e.target.value, 10) || currentWeek;
+    saveCurrentPeriod();
+    loadWeekData();
+    render();
+  };
+
+  load();
+  setTab('tracker');
+})();
+</script>
+</body>
+</html>

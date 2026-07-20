@@ -14,7 +14,7 @@
     color: #1F2A17;
   }
   .wrap { max-width: 720px; margin: 0 auto; }
-  .title-card { display:inline-block; background:#ecf3e3; border-radius: 10px; padding: 10px 18px; margin: 0 0 16px; }
+  .title-card { display:inline-block; background:#ecf8dc; border-radius: 10px; padding: 10px 18px; margin: 0 0 16px; }
   h1 { font-size: 20px; font-weight: 700; color: #27500A; margin: 0; }
 
   .card { background:#ffffff; border: 1px solid #DCE7D0; border-radius: 16px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
@@ -187,7 +187,12 @@
 
     <div id="manage" class="card" style="display:none;">
       <div class="section-label">Current students</div>
+      <div class="search-wrap">
+        <span class="icon">&#128269;</span>
+        <input type="text" id="manage-search" placeholder="Search students" />
+      </div>
       <div id="manage-list"></div>
+      <div id="manage-empty-note" class="empty-note" style="display:none;">No students match your search.</div>
 
       <div class="section-label">Add students</div>
       <textarea id="add-students-input" rows="4" placeholder="Add new names, one per line&#10;e.g. Jane Doe"></textarea>
@@ -198,6 +203,10 @@
 
     <div id="removed" class="card" style="display:none;">
       <div class="section-label">Removed students</div>
+      <div class="search-wrap">
+        <span class="icon">&#128269;</span>
+        <input type="text" id="removed-search" placeholder="Search removed students" />
+      </div>
       <div id="removed-list"></div>
       <div id="removed-empty" class="empty-note" style="display:none;">No removed students. When you remove someone from the manage tab, they'll show up here along with their documentation history.</div>
     </div>
@@ -407,17 +416,21 @@
 
   function renderManage(){
   const wrap = document.getElementById('manage-list');
+  const emptyNote = document.getElementById('manage-empty-note');
   wrap.innerHTML = '';
   if (!roster.length) {
+    emptyNote.style.display = 'none';
     wrap.innerHTML = '<div class="empty-note">No students yet.</div>';
     return;
   }
-  roster.slice().sort((a,b) => a.localeCompare(b)).forEach(name => {
+  const query = (document.getElementById('manage-search').value || '').toLowerCase();
+  const filteredRoster = roster.filter(name => name.toLowerCase().includes(query));
+  emptyNote.style.display = filteredRoster.length ? 'none' : 'block';
+  filteredRoster.slice().sort((a,b) => a.localeCompare(b)).forEach(name => {
     const row = document.createElement('div');
     row.className = 'manage-row';
 
     if (editingStudent === name) {
-      // ---- edit mode: input box + Save button ----
       const input = document.createElement('input');
       input.type = 'text';
       input.value = name;
@@ -440,7 +453,6 @@
       row.appendChild(saveBtn);
       row.appendChild(removeBtn);
     } else {
-      // ---- display mode: plain name + checkmark ----
       const nameEl = document.createElement('div');
       nameEl.className = 'name';
       nameEl.textContent = name;
@@ -474,9 +486,12 @@
     const wrap = document.getElementById('removed-list');
     const emptyNote = document.getElementById('removed-empty');
     wrap.innerHTML = '';
-    emptyNote.style.display = removedRoster.length ? 'none' : 'block';
 
-    removedRoster.slice().sort((a,b) => a.localeCompare(b)).forEach(name => {
+    const query = (document.getElementById('removed-search').value || '').toLowerCase();
+    const filteredRemoved = removedRoster.filter(name => name.toLowerCase().includes(query));
+    emptyNote.style.display = filteredRemoved.length ? 'none' : 'block';
+
+    filteredRemoved.slice().sort((a,b) => a.localeCompare(b)).forEach(name => {
       const box = document.createElement('div');
       box.className = 'manage-row';
       box.style.flexDirection = 'column';
@@ -664,6 +679,8 @@
   document.getElementById('tab-removed').onclick = () => setTab('removed');
 
   document.getElementById('search').oninput = render;
+  document.getElementById('manage-search').oninput = renderManage;
+  document.getElementById('removed-search').oninput = renderRemoved;
 
   document.getElementById('block-num').onchange = (e) => {
     currentBlock = parseInt(e.target.value, 10) || currentBlock;
